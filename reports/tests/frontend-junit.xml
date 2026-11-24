@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="8" failures="0" errors="0" time="0.047375963">
+    <testsuite name="tests/components.test.js" timestamp="2026-11-24T01:31:42.126Z" hostname="j" tests="8" failures="0" errors="0" skipped="0" time="0.047375963">
+        <testcase classname="tests/components.test.js" name="InputError &gt; renders the message" time="0.019732403">
+        </testcase>
+        <testcase classname="tests/components.test.js" name="InputError &gt; escapes markup in messages" time="0.002594783">
+        </testcase>
+        <testcase classname="tests/components.test.js" name="InputLabel &gt; renders the value prop" time="0.002041028">
+        </testcase>
+        <testcase classname="tests/components.test.js" name="InputLabel &gt; prefers slot content when no value is given" time="0.009150402">
+        </testcase>
+        <testcase classname="tests/components.test.js" name="PrimaryButton &gt; renders slot content" time="0.002640312">
+        </testcase>
+        <testcase classname="tests/components.test.js" name="TextInput &gt; shows the bound value" time="0.002584062">
+        </testcase>
+        <testcase classname="tests/components.test.js" name="TextInput &gt; emits updates on input" time="0.003677159">
+        </testcase>
+        <testcase classname="tests/components.test.js" name="Checkbox &gt; emits the checked state" time="0.00285029">
+        </testcase>
+    </testsuite>
+</testsuites>
