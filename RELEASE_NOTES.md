@@ -13,13 +13,13 @@ A modernization release that moves the 2023 account foundation to a supported st
 ## Upgrading from the 2023 code
 
 1. Move your `.env` to `backend/.env` and compare it with `backend/.env.example`.
-2. Install PHP 8.3+ and Node.js 22.12+.
+2. Install PHP 8.4+ and Node.js 22.12+.
 3. Run `composer install --no-scripts` and `php artisan package:discover` in `backend/`.
 4. Run `npm ci --ignore-scripts && npm run build` in `frontend/`.
 5. Point the web server document root to `backend/public`.
-6. Set `SESSION_SECURE_COOKIE=true` in production.
+6. Serve production over HTTPS. Session cookies are always HTTPS-only when `APP_ENV=production`.
 
-Enabling session encryption invalidates existing sessions, so users will need to sign in again. Existing password hashes keep working.
+Enabling session encryption invalidates existing sessions, so users will need to sign in again. Existing password hashes keep working. Changing an email address now requires the current password, and changing a password signs out other sessions and revokes API tokens.
 
 ## Known limitations
 

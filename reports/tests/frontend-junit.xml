@@ -1,21 +1,27 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuites name="vitest tests" tests="8" failures="0" errors="0" time="0.047375963">
-    <testsuite name="tests/components.test.js" timestamp="2026-11-24T01:31:42.126Z" hostname="redacted" tests="8" failures="0" errors="0" skipped="0" time="0.047375963">
-        <testcase classname="tests/components.test.js" name="InputError &gt; renders the message" time="0.019732403">
+<testsuites name="vitest tests" tests="10" failures="0" errors="0" time="0.077573773">
+    <testsuite name="tests/components.test.js" timestamp="2026-11-24T02:45:28.672Z" hostname="audit-container" tests="8" failures="0" errors="0" skipped="0" time="0.040006632">
+        <testcase classname="tests/components.test.js" name="InputError &gt; renders the message" time="0.01488887">
         </testcase>
-        <testcase classname="tests/components.test.js" name="InputError &gt; escapes markup in messages" time="0.002594783">
+        <testcase classname="tests/components.test.js" name="InputError &gt; escapes markup in messages" time="0.00190248">
         </testcase>
-        <testcase classname="tests/components.test.js" name="InputLabel &gt; renders the value prop" time="0.002041028">
+        <testcase classname="tests/components.test.js" name="InputLabel &gt; renders the value prop" time="0.002297422">
         </testcase>
-        <testcase classname="tests/components.test.js" name="InputLabel &gt; prefers slot content when no value is given" time="0.009150402">
+        <testcase classname="tests/components.test.js" name="InputLabel &gt; prefers slot content when no value is given" time="0.008698045">
         </testcase>
-        <testcase classname="tests/components.test.js" name="PrimaryButton &gt; renders slot content" time="0.002640312">
+        <testcase classname="tests/components.test.js" name="PrimaryButton &gt; renders slot content" time="0.002222878">
         </testcase>
-        <testcase classname="tests/components.test.js" name="TextInput &gt; shows the bound value" time="0.002584062">
+        <testcase classname="tests/components.test.js" name="TextInput &gt; shows the bound value" time="0.002462855">
         </testcase>
-        <testcase classname="tests/components.test.js" name="TextInput &gt; emits updates on input" time="0.003677159">
+        <testcase classname="tests/components.test.js" name="TextInput &gt; emits updates on input" time="0.003136685">
         </testcase>
-        <testcase classname="tests/components.test.js" name="Checkbox &gt; emits the checked state" time="0.00285029">
+        <testcase classname="tests/components.test.js" name="Checkbox &gt; emits the checked state" time="0.00274114">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/profile-form.test.js" timestamp="2026-11-24T02:45:28.675Z" hostname="audit-container" tests="2" failures="0" errors="0" skipped="0" time="0.037567141">
+        <testcase classname="tests/profile-form.test.js" name="UpdateProfileInformationForm &gt; hides the current password field while the email is unchanged" time="0.026974511">
+        </testcase>
+        <testcase classname="tests/profile-form.test.js" name="UpdateProfileInformationForm &gt; asks for the current password when the email changes" time="0.009158447">
         </testcase>
     </testsuite>
 </testsuites>

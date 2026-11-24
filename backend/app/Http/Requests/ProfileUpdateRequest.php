@@ -18,6 +18,12 @@ class ProfileUpdateRequest extends FormRequest
         return [
             'name' => ['string', 'max:255'],
             'email' => ['email', 'max:255', Rule::unique(User::class)->ignore($this->user()->id)],
+            'current_password' => $this->changesEmail() ? ['required', 'string', 'current_password'] : ['exclude'],
         ];
+    }
+
+    private function changesEmail(): bool
+    {
+        return $this->has('email') && $this->input('email') !== $this->user()->email;
     }
 }

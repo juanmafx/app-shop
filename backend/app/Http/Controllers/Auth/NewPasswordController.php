@@ -35,7 +35,7 @@ class NewPasswordController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'token' => 'required',
+            'token' => ['required', 'string'],
             'email' => 'required|email',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
@@ -51,6 +51,8 @@ class NewPasswordController extends Controller
                     'remember_token' => Str::random(60),
                 ])->save();
 
+                $user->tokens()->delete();
+
                 event(new PasswordReset($user));
             }
         );
@@ -63,7 +65,7 @@ class NewPasswordController extends Controller
         }
 
         throw ValidationException::withMessages([
-            'email' => [trans($status)],
+            'email' => [trans(Password::INVALID_TOKEN)],
         ]);
     }
 }

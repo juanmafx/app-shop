@@ -8,6 +8,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Hashing\BcryptHasher;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
+use Laravel\Sanctum\PersonalAccessToken;
 use Tests\TestCase;
 
 class SecurityTest extends TestCase
@@ -153,5 +155,226 @@ class SecurityTest extends TestCase
     public function test_cors_allows_no_origin_by_default(): void
     {
         $this->assertSame([], array_values(config('cors.allowed_origins')));
+    }
+
+    public function test_password_reset_with_invalid_token_does_not_reveal_account_existence(): void
+    {
+        $user = User::factory()->create();
+
+        $known = $this->resetErrorFor($user->email);
+        $unknown = $this->resetErrorFor('absent@example.test');
+
+        $this->assertSame($known, $unknown);
+    }
+
+    public function test_sessions_created_before_a_password_change_are_signed_out(): void
+    {
+        $user = User::factory()->create();
+        $previousHash = $user->password;
+        $user->update(['password' => Hash::make('Another-Password-123')]);
+
+        $this->actingAs($user->fresh())
+            ->withSession(['password_hash_web' => $previousHash])
+            ->get('/dashboard')
+            ->assertRedirect('/login');
+    }
+
+    public function test_password_change_keeps_the_current_session(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->withSession(['password_hash_web' => $user->password])->put('/password', [
+            'current_password' => 'password',
+            'password' => 'Another-Password-123',
+            'password_confirmation' => 'Another-Password-123',
+        ])->assertSessionHasNoErrors();
+
+        $this->get('/dashboard')->assertOk();
+    }
+
+    public function test_password_change_rotates_remember_token_and_revokes_api_tokens(): void
+    {
+        $user = User::factory()->create();
+        $user->createToken('device');
+        $rememberToken = $user->remember_token;
+
+        $this->actingAs($user)->put('/password', [
+            'current_password' => 'password',
+            'password' => 'Another-Password-123',
+            'password_confirmation' => 'Another-Password-123',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertNotSame($rememberToken, $user->fresh()->remember_token);
+        $this->assertSame(0, PersonalAccessToken::count());
+    }
+
+    public function test_password_reset_revokes_api_tokens(): void
+    {
+        $user = User::factory()->create();
+        $user->createToken('device');
+
+        $this->post('/reset-password', [
+            'token' => Password::createToken($user),
+            'email' => $user->email,
+            'password' => 'Another-Password-123',
+            'password_confirmation' => 'Another-Password-123',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(0, PersonalAccessToken::count());
+    }
+
+    public function test_account_deletion_removes_api_tokens(): void
+    {
+        $user = User::factory()->create();
+        $user->createToken('device');
+
+        $this->actingAs($user)->delete('/profile', ['password' => 'password'])->assertSessionHasNoErrors();
+
+        $this->assertSame(0, PersonalAccessToken::count());
+    }
+
+    public function test_login_is_rate_limited_per_client_across_accounts(): void
+    {
+        foreach (range(1, 20) as $attempt) {
+            $this->post('/login', ['email' => "user{$attempt}@example.test"]);
+        }
+
+        $this->post('/login', ['email' => 'another@example.test'])->assertStatus(429);
+    }
+
+    public function test_account_deletion_attempts_are_rate_limited(): void
+    {
+        $user = User::factory()->create();
+
+        foreach (range(1, 6) as $attempt) {
+            $this->actingAs($user)->from('/profile')->delete('/profile', ['password' => 'wrong-password']);
+        }
+
+        $this->actingAs($user)->from('/profile')->delete('/profile', ['password' => 'wrong-password'])->assertStatus(429);
+    }
+
+    public function test_password_confirmation_rejects_non_string_input(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->from('/confirm-password')
+            ->post('/confirm-password', ['password' => ['password']])
+            ->assertSessionHasErrors('password');
+    }
+
+    public function test_email_change_requires_the_current_password(): void
+    {
+        $user = User::factory()->create();
+        $email = $user->email;
+
+        $this->actingAs($user)->from('/profile')->patch('/profile', [
+            'name' => $user->name,
+            'email' => 'attacker@example.test',
+        ])->assertSessionHasErrors('current_password');
+
+        $this->assertSame($email, $user->fresh()->email);
+    }
+
+    public function test_email_change_rejects_a_wrong_current_password(): void
+    {
+        $user = User::factory()->create();
+        $email = $user->email;
+
+        $this->actingAs($user)->from('/profile')->patch('/profile', [
+            'name' => $user->name,
+            'email' => 'attacker@example.test',
+            'current_password' => 'wrong-password',
+        ])->assertSessionHasErrors('current_password');
+
+        $this->assertSame($email, $user->fresh()->email);
+    }
+
+    public function test_name_change_does_not_require_the_current_password(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->from('/profile')->patch('/profile', [
+            'name' => 'Renamed User',
+            'email' => $user->email,
+            'current_password' => '',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame('Renamed User', $user->fresh()->name);
+    }
+
+    public function test_expired_api_token_is_rejected(): void
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('device');
+        $token->accessToken->forceFill(['created_at' => now()->subMinutes(1441)])->save();
+
+        $this->withHeader('Authorization', 'Bearer '.$token->plainTextToken)
+            ->getJson('/api/user')
+            ->assertUnauthorized();
+    }
+
+    public function test_blank_token_lifetime_falls_back_to_the_default(): void
+    {
+        $config = $this->evaluateConfig('sanctum.php', ['SANCTUM_EXPIRATION' => '']);
+
+        $this->assertSame(1440, $config['expiration']);
+    }
+
+    public function test_session_cookie_is_secure_in_production_even_when_the_env_disables_it(): void
+    {
+        $config = $this->evaluateConfig('session.php', ['APP_ENV' => 'production', 'SESSION_SECURE_COOKIE' => 'false']);
+
+        $this->assertTrue($config['secure']);
+    }
+
+    public function test_cors_allowlist_ignores_whitespace(): void
+    {
+        $config = $this->evaluateConfig('cors.php', ['CORS_ALLOWED_ORIGINS' => 'https://a.example.test, https://b.example.test']);
+
+        $this->assertSame(['https://a.example.test', 'https://b.example.test'], array_values($config['allowed_origins']));
+    }
+
+    private function resetErrorFor(string $email): string
+    {
+        $response = $this->from('/reset-password/token')->post('/reset-password', [
+            'token' => 'invalid-token',
+            'email' => $email,
+            'password' => 'Another-Password-123',
+            'password_confirmation' => 'Another-Password-123',
+        ]);
+        $message = $response->getSession()->get('errors')->first('email');
+        $this->flushSession();
+
+        return $message;
+    }
+
+    private function evaluateConfig(string $file, array $environment): array
+    {
+        $previous = [];
+
+        foreach ($environment as $key => $value) {
+            $previous[$key] = [$_ENV[$key] ?? null, $_SERVER[$key] ?? null];
+            $_ENV[$key] = $value;
+            $_SERVER[$key] = $value;
+        }
+
+        try {
+            return require config_path($file);
+        } finally {
+            foreach ($previous as $key => [$env, $server]) {
+                if ($env === null) {
+                    unset($_ENV[$key]);
+                } else {
+                    $_ENV[$key] = $env;
+                }
+
+                if ($server === null) {
+                    unset($_SERVER[$key]);
+                } else {
+                    $_SERVER[$key] = $server;
+                }
+            }
+        }
     }
 }

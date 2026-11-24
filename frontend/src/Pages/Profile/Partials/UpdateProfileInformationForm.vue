@@ -4,6 +4,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Link, useForm, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 defineProps({
     mustVerifyEmail: {
@@ -14,12 +15,23 @@ defineProps({
     },
 });
 
-const user = usePage().props.auth.user;
+const page = usePage();
+const user = page.props.auth.user;
 
 const form = useForm({
     name: user.name,
     email: user.email,
+    current_password: '',
 });
+
+const emailChanged = computed(() => form.email !== page.props.auth.user.email);
+
+const submit = () => {
+    form.patch(route('profile.update'), {
+        preserveScroll: true,
+        onFinish: () => form.reset('current_password'),
+    });
+};
 </script>
 
 <template>
@@ -32,7 +44,7 @@ const form = useForm({
             </p>
         </header>
 
-        <form @submit.prevent="form.patch(route('profile.update'))" class="mt-6 space-y-6">
+        <form @submit.prevent="submit" class="mt-6 space-y-6">
             <div>
                 <InputLabel for="name" value="Name" />
 
@@ -62,6 +74,21 @@ const form = useForm({
                 />
 
                 <InputError class="mt-2" :message="form.errors.email" />
+            </div>
+
+            <div v-if="emailChanged">
+                <InputLabel for="profile_current_password" value="Current Password" />
+
+                <TextInput
+                    id="profile_current_password"
+                    type="password"
+                    class="mt-1 block w-full"
+                    v-model="form.current_password"
+                    required
+                    autocomplete="current-password"
+                />
+
+                <InputError class="mt-2" :message="form.errors.current_password" />
             </div>
 
             <div v-if="mustVerifyEmail && user.email_verified_at === null">

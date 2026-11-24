@@ -13,9 +13,9 @@ The project was started to build an online shop on Laravel, beginning with the p
 | Area | Behavior |
 | --- | --- |
 | Registration | Creates an account with a validated name, unique email, and strong password |
-| Authentication | Session login with remember-me, rate limiting, and session regeneration |
-| Password recovery | Emails a single-use, expiring reset link with a response that does not reveal whether an account exists |
-| Profile | Update name and email, change password, delete account after password confirmation |
+| Authentication | Session login with remember-me, per-account and per-client rate limits, and session regeneration |
+| Password recovery | Emails a single-use, expiring reset link. Request and reset responses use the same wording for known and unknown addresses |
+| Profile | Update name, change email with the current password, change password, delete account after password confirmation. A password change signs out other sessions and revokes API tokens |
 | API | `GET /api/user` returns the current user for a valid Sanctum token |
 | Email verification | Routes and screens exist; enforcement is off until `User` implements `MustVerifyEmail` |
 
@@ -34,7 +34,7 @@ The browser loads a Vue single-page shell. Inertia exchanges page data with Lara
 
 ## Quick start
 
-Requirements: PHP 8.3 or newer with `dom`, `mbstring`, `pdo_sqlite`, and `xml`; Composer 2; Node.js 22.12 or newer.
+Requirements: PHP 8.4 or newer with `dom`, `mbstring`, `pdo_sqlite`, and `xml`; Composer 2; Node.js 22.12 or newer.
 
 ```bash
 cd backend
@@ -72,9 +72,9 @@ Settings live in `backend/.env`; [`backend/.env.example`](backend/.env.example) 
 | `APP_DEBUG` | Detailed errors; keep `false` outside development | `false` |
 | `DB_CONNECTION` | Database driver | `sqlite` |
 | `SESSION_ENCRYPT` | Encrypt session payloads | `true` |
-| `SESSION_SECURE_COOKIE` | Send cookies over HTTPS only; set `true` in production | `false` |
+| `SESSION_SECURE_COOKIE` | HTTPS-only cookies outside production; always on when `APP_ENV=production` | `false` |
 | `CORS_ALLOWED_ORIGINS` | Comma-separated cross-origin allowlist | empty |
-| `SANCTUM_EXPIRATION` | API token lifetime in minutes | `1440` |
+| `SANCTUM_EXPIRATION` | API token lifetime in minutes; blank or `0` uses the default | `1440` |
 | `MAIL_MAILER` | Mail transport | `log` |
 
 ## Database
@@ -100,4 +100,4 @@ Originally created in 2023, modernized in 2026.
 
 ## Credits and license
 
-The application was scaffolded from the [Laravel](https://github.com/laravel/laravel) application skeleton and the [Laravel Breeze](https://github.com/laravel/breeze) Vue and Inertia starter kit, both MIT-licensed by Taylor Otwell. Most authentication controllers, pages, and components derive from those templates. The package metadata declares MIT, inherited from the skeleton.
+The application was scaffolded from the [Laravel](https://github.com/laravel/laravel) application skeleton and the [Laravel Breeze](https://github.com/laravel/breeze) Vue and Inertia starter kit, both MIT-licensed by Taylor Otwell. Most authentication controllers, pages, and components derive from those templates. The package metadata declares MIT, inherited from the skeleton. Upstream license text is reproduced in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
